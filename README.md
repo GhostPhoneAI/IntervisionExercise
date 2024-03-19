@@ -1,6 +1,6 @@
 # Intervision# Amazon Connect Contact Center Project for InterVision
 
-CALL +1 316-219-4911 to hear the demo 
+**Call +1 316 219 4911 to hear the demo. 3 extensions (#1, #2, #3) are enabled, the rest is placeholder fluff. Press 3 for some cool stuff**:
 
 
 InterVision is embarking on a project to build a state-of-the-art, 100-agent Amazon Connect contact center that leverages a wide range of AWS services to deliver exceptional customer experiences, optimize operational efficiency, and drive continuous improvement. This contact center will have a strong focus on conversational flow, minimizing wait times, and reducing caller frustration. Here's a detailed technical summary of the project:
