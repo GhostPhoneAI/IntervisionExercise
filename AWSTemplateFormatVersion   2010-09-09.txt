@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: InterVision Amazon Connect Contact Center Infrastructure
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # ... (Previous resources) ...
+
+  # AWS Lambda Functions
+  TranscribeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      # ... (Previous properties) ...
+
+  LexBot:
+    Type: AWS::Lex::Bot
+    Properties:
+      Name: !Sub '${Environment}-lex-bot'
+      DataPrivacy:
+        ChildDirected: false
+      Description: Lex Bot for Contact Center
+      IdleSessionTTLInSeconds: 300
+      BotIdleSafetyPin: 12345
+
+  LexBotAlias:
+    Type: AWS::Lex::BotAlias
+    Properties:
+      BotName: !Ref LexBot
+      BotAlias: !Sub '${Environment}-lex-bot-alias'
+      BotVersion: '$LATEST'
+
+  LexLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-lex-lambda'
+      Runtime: python3.9
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          # Lex Lambda code
+      Role: !GetAtt LexLambdaRole.Arn
+
+  LexLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  VoicemailLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-voicemail-lambda'
+      Runtime: python3.9
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          # Voicemail Lambda code
+      Role: !GetAtt VoicemailLambdaRole.Arn
+      Environment:
+        Variables:
+          RECORDINGS_BUCKET: !Ref RecordingsBucket
+
+  VoicemailLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadWriteAccess'
+
+  SalesforceAPILambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-salesforce-api-lambda'
+      Runtime: python3.9
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          # Salesforce API Lambda code
+      Role: !GetAtt SalesforceAPILambdaRole.Arn
+
+  SalesforceAPILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+# Additional Resources (CloudFormation Resources, etc.)
+
+Outputs:
+  # ... (Previous outputs) ...
+  LexBotAlias:
+    Description: Alias for the Lex Bot
+    Value: !Ref LexBotAlias
+  LexLambdaArn:
+    Description: ARN of the Lex Lambda Function
+    Value: !GetAtt LexLambda.Arn
+  VoicemailLambdaArn:
+    Description: ARN of the Voicemail Lambda Function
+    Value: !GetAtt VoicemailLambda.Arn
+  SalesforceAPILambdaArn:
+    Description: ARN of the Salesforce API Lambda Function
+    Value: !GetAtt SalesforceAPILambda.Arn
