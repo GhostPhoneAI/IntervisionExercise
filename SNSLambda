@@ -1,0 +1,53 @@
+import json
+import boto3
+
+# Initialize AWS clients
+connect_client = boto3.client('connect')
+pinpoint_client = boto3.client('pinpoint')
+sns_client = boto3.client('sns')
+
+# Connect Instance ID and SNS Topic ARN (from CloudFormation outputs)
+CONNECT_INSTANCE_ID = 'YOUR_CONNECT_INSTANCE_ID'
+SNS_TOPIC_ARN = 'YOUR_SNS_TOPIC_ARN'
+
+# Pinpoint Project ID and SMS Channel
+PINPOINT_PROJECT_ID = 'YOUR_PINPOINT_PROJECT_ID'
+SMS_CHANNEL = 'YOUR_SMS_CHANNEL'
+
+def lambda_handler(event, context):
+    # Parse the event data
+    contact_data = event['Details']['ContactData']
+    customer_phone_number = contact_data['CustomerEndpoint']['Address']
+
+    # Send an SMS using Amazon Pinpoint
+    send_sms_response = pinpoint_client.send_messages(
+        ApplicationId=PINPOINT_PROJECT_ID,
+        MessageRequest={
+            'Addresses': {
+                customer_phone_number: {
+                    'ChannelType': SMS_CHANNEL
+                }
+            },
+            'MessageConfiguration': {
+                'SMSMessage': {
+                    'Body': 'Thank you for contacting our support center. One of our agents will be with you shortly.',
+                    'MessageType': 'PROMOTIONAL'
+                }
+            }
+        }
+    )
+
+    # Publish a notification to the SNS topic
+    sns_client.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Message=json.dumps({
+            'ContactId': contact_data['ContactId'],
+            'CustomerPhoneNumber': customer_phone_number
+        }),
+        Subject='New Contact'
+    )
+
+    # Return a response to Amazon Connect
+    return {
+        'Status': 'Success'
+    }
